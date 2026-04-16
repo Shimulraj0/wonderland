@@ -38,6 +38,8 @@ dependencies:
   google_fonts: ^8.0.2
   pinput: ^5.0.0
   flutter_svg: ^2.2.4
+  liquid_glass_renderer: ^0.2.0-dev.4
+  adaptive_platform_ui: ^0.1.104
 
 dev_dependencies:
   flutter_test:

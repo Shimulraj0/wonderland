@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import '../../core/theme/app_colors.dart';
 import '../child_profile/add_child_screen.dart';
 import '../common/widgets/background_scaffold.dart';
@@ -383,41 +384,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNav() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(99),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(99),
+        boxShadow: [
+          // Primary depth shadow
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+            spreadRadius: -4,
+          ),
+          // Subtle brand glow
+          BoxShadow(
+            color: const Color(0xFFE89C30).withValues(alpha: 0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: AdaptiveBlurView(
+        blurStyle: BlurStyle.systemThinMaterial,
+        borderRadius: BorderRadius.circular(99),
         child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: ShapeDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment(0.07, 0.10),
-              end: Alignment(0.93, 0.94),
-              colors: [Color(0x7F21242A), Color(0x4C717B90)],
+          height: 76,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            // Subtle brand-tinted overlay — doesn't fight with AdaptiveBlurView
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFFE89C30).withValues(alpha: 0.06),
+                Colors.transparent,
+                const Color(0xFFE89C30).withValues(alpha: 0.03),
+              ],
             ),
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 1, color: Color(0x33E89C30)),
-              borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: const Color(0xFFE89C30).withValues(alpha: 0.15),
+              width: 0.5,
             ),
-            shadows: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 20,
-                offset: Offset(0, 8),
-              )
-            ],
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.all_inbox_rounded, 'Library'),
-              _buildNavItem(
-                2,
-                Icons.auto_awesome,
-                'Create',
-              ), 
+              _buildNavItem(2, Icons.auto_awesome, 'Create'),
               _buildNavItem(3, Icons.mic_none_rounded, 'Voice'),
               _buildNavItem(4, Icons.person_rounded, 'Profile'),
             ],
@@ -429,30 +443,66 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    return InkWell(
+    return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected
-                ? const Color(0xFFE89C30)
-                : const Color(0x7FFCFDFD),
-            size: 24,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected
-                  ? const Color(0xFFE89C30)
-                  : const Color(0x7FFCFDFD),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 56,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFE89C30).withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected
+                    ? const Color(0xFFE89C30)
+                    : Colors.white.withValues(alpha: 0.45),
+                size: 22,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: isSelected
+                    ? const Color(0xFFE89C30)
+                    : Colors.white.withValues(alpha: 0.45),
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            // Active indicator dot
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.only(top: 3),
+              width: isSelected ? 4 : 0,
+              height: isSelected ? 4 : 0,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE89C30),
+                shape: BoxShape.circle,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFE89C30).withValues(alpha: 0.6),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : [],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
