@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../common/widgets/background_scaffold.dart';
-import '../login/login_screen.dart';
+import 'login_screen.dart';
 
 class EmailVerifiedConfirmScreen extends StatelessWidget {
   const EmailVerifiedConfirmScreen({super.key});

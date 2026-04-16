@@ -7,9 +7,9 @@ import '../../data/providers/auth_provider.dart';
 import '../../data/states/auth_state.dart';
 import '../child_profile/add_child_screen.dart';
 import '../common/widgets/background_scaffold.dart';
-import '../forgot_password/forgot_password_screen.dart';
-import '../register/register_screen.dart';
-import '../verify_email/verify_email_screen.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart';
+import 'verify_email_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pinput/pinput.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers/auth_provider.dart';
 import '../../data/states/auth_state.dart';
@@ -17,34 +18,15 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  final List<TextEditingController> _controllers = List.generate(
-    6,
-    (index) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  final _pinController = TextEditingController();
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    _pinController.dispose();
     super.dispose();
   }
 
-  void _onChanged(String value, int index) {
-    if (value.length == 1 && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    }
-    if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
-    }
-  }
-
-  void _handleVerify() {
-    String code = _controllers.map((c) => c.text).join();
+  void _handleVerify(String code) {
     if (code.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter the complete 6-digit code')),
@@ -76,6 +58,36 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         );
       }
     });
+
+    final defaultPinTheme = PinTheme(
+      width: 50,
+      height: 64,
+      textStyle: GoogleFonts.poppins(
+        color: Colors.white,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0x11FFFFFF),
+        border: Border.all(
+          color: const Color(0xFFE89C30).withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+
+    final focusedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        border: Border.all(color: AppColors.accent, width: 2),
+      ),
+    );
+
+    final submittedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        border: Border.all(color: const Color(0xFFE89C30).withValues(alpha: 0.7)),
+      ),
+    );
 
     return BackgroundScaffold(
       body: SafeArea(
@@ -146,13 +158,16 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               ),
               const SizedBox(height: 40),
 
-              // OTP Input Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(
-                  6,
-                  (index) => _buildOTPBox(index, isLoading),
-                ),
+              // Pinput Replacement
+              Pinput(
+                length: 6,
+                controller: _pinController,
+                defaultPinTheme: defaultPinTheme,
+                focusedPinTheme: focusedPinTheme,
+                submittedPinTheme: submittedPinTheme,
+                enabled: !isLoading,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                onCompleted: (pin) => _handleVerify(pin),
               ),
 
               const SizedBox(height: 32),
@@ -175,7 +190,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               const SizedBox(height: 24),
 
               InkWell(
-                onTap: isLoading ? null : _handleVerify,
+                onTap: isLoading ? null : () => _handleVerify(_pinController.text),
                 borderRadius: BorderRadius.circular(32),
                 child: Container(
                   width: double.infinity,
@@ -214,45 +229,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               const SizedBox(height: 40),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOTPBox(int index, bool isLoading) {
-    return Container(
-      width: 50,
-      height: 64,
-      decoration: ShapeDecoration(
-        color: const Color(0x11FFFFFF),
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: _focusNodes[index].hasFocus
-                ? AppColors.accent
-                : const Color(0xFFE89C30).withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Center(
-        child: TextField(
-          controller: _controllers[index],
-          focusNode: _focusNodes[index],
-          enabled: !isLoading,
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          maxLength: 1,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
-          decoration: const InputDecoration(
-            counterText: '',
-            border: InputBorder.none,
-          ),
-          onChanged: (value) => _onChanged(value, index),
         ),
       ),
     );

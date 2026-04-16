@@ -5,7 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/providers/auth_provider.dart';
 import '../../data/states/auth_state.dart';
 import '../common/widgets/background_scaffold.dart';
-import '../verify_email/verify_email_screen.dart';
+import 'verify_email_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});

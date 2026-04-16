@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            if (child != null) child,
+            child ?? const SizedBox.shrink(),
           ],
         );
       },

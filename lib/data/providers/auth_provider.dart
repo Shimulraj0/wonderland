@@ -63,11 +63,11 @@ class AuthNotifier extends Notifier<AuthState> {
     // Simulating API call
     await Future.delayed(const Duration(seconds: 1));
     
-    if (code == '357329') { 
-      // Successful verification resets state to initial (or authenticated)
+    if (code.length == 6) { 
+      // Mock flow: Any 6-digit code succeeds for now
       state = const AuthInitial(); 
     } else {
-      state = const AuthError('Incorrect verification code. Please try again.');
+      state = const AuthError('Please enter a valid 6-digit code.');
     }
   }
 
