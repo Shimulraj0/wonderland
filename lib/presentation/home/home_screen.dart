@@ -13,7 +13,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
 
   @override
@@ -388,18 +388,11 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(99),
         boxShadow: [
-          // Primary depth shadow
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
             spreadRadius: -4,
-          ),
-          // Subtle brand glow
-          BoxShadow(
-            color: const Color(0xFFE89C30).withValues(alpha: 0.08),
-            blurRadius: 32,
-            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -407,27 +400,16 @@ class _HomeScreenState extends State<HomeScreen> {
         blurStyle: BlurStyle.systemThinMaterial,
         borderRadius: BorderRadius.circular(99),
         child: Container(
-          height: 76,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(99),
-            // Subtle brand-tinted overlay — doesn't fight with AdaptiveBlurView
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xFFE89C30).withValues(alpha: 0.06),
-                Colors.transparent,
-                const Color(0xFFE89C30).withValues(alpha: 0.03),
-              ],
-            ),
             border: Border.all(
-              color: const Color(0xFFE89C30).withValues(alpha: 0.15),
-              width: 0.5,
+              color: Colors.white.withValues(alpha: 0.18),
+              width: 1,
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(0, Icons.home_rounded, 'Home'),
               _buildNavItem(1, Icons.all_inbox_rounded, 'Library'),
@@ -443,65 +425,64 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFFE89C30).withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected
-                    ? const Color(0xFFE89C30)
-                    : Colors.white.withValues(alpha: 0.45),
-                size: 22,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                color: isSelected
-                    ? const Color(0xFFE89C30)
-                    : Colors.white.withValues(alpha: 0.45),
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-            // Active indicator dot
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.only(top: 3),
-              width: isSelected ? 4 : 0,
-              height: isSelected ? 4 : 0,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE89C30),
-                shape: BoxShape.circle,
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFE89C30).withValues(alpha: 0.6),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+    const selectedColor = Color(0xFFE89C30);
+    final unselectedColor = Colors.white.withValues(alpha: 0.5);
+    const duration = Duration(milliseconds: 400);
+    const curve = Curves.easeOutCubic;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: isSelected ? 1.0 : 0.0),
+          duration: duration,
+          curve: curve,
+          builder: (context, value, _) {
+            final color = Color.lerp(unselectedColor, selectedColor, value)!;
+            final scale = 1.0 + (0.12 * value);
+            final glowOpacity = 0.18 * value;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon with glow backdrop + scale
+                Transform.scale(
+                  scale: scale,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Soft glow behind active icon
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: selectedColor.withValues(alpha: glowOpacity),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
-                      ]
-                    : [],
-              ),
-            ),
-          ],
+                      ),
+                      Icon(icon, color: color, size: 28),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
