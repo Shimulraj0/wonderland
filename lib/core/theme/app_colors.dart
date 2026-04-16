@@ -5,6 +5,7 @@ class AppColors {
   static const Color textPrimary = Color(0xFFFEFEFE);
   static const Color textSecondary = Color(0xCCFEFEFE);
   static const Color accent = Color(0xFFE89C30);
+  static const Color textMuted = Color(0xFFC3CED0);
   
   static const Gradient buttonGradient = LinearGradient(
     begin: Alignment.topLeft,
