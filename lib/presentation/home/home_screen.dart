@@ -1,46 +1,39 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../child_profile/add_child_screen.dart';
 import '../common/widgets/background_scaffold.dart';
+import '../create/create_story_screen.dart';
+import '../library/library_screen.dart';
+import '../voice/voice_screen.dart';
+import '../profile/profile_screen.dart';
+import '../../data/providers/navigation_provider.dart';
+import '../../data/providers/child_provider.dart';
+import '../../data/providers/story_provider.dart';
+import '../../data/models/child_model.dart';
+import '../../data/models/story_model.dart';
 
-class HomeScreen extends StatefulWidget {
+import '../common/widgets/player_dialog.dart';
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  int _currentIndex = 0;
+class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
     return BackgroundScaffold(
       body: Stack(
         children: [
-          // Main Content
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  _buildHeader(context),
-                  const SizedBox(height: 32),
-                  _buildContinueAdventure(),
-                  const SizedBox(height: 32),
-                  _buildCreateNewStory(),
-                  const SizedBox(height: 32),
-                  _buildRecentStories(),
-                  const SizedBox(height: 120), // Spacer for bottom nav
-                ],
-              ),
-            ),
-          ),
+          // Tab Content
+          _buildTabContent(ref.watch(navigationProvider)),
 
           // Floating Bottom Navigation
           Positioned(left: 30, right: 30, bottom: 40, child: _buildBottomNav()),
@@ -49,7 +42,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildTabContent(int currentIndex) {
+    switch (currentIndex) {
+      case 0:
+        return _buildHomeContent();
+      case 1:
+        return const LibraryScreen();
+      case 2:
+        return const CreateStoryScreen();
+      case 3:
+        return const VoiceScreen();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return _buildHomeContent();
+    }
+  }
+
+  Widget _buildHomeContent() {
+    final children = ref.watch(childProvider);
+    final stories = ref.watch(storyProvider);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            _buildHeader(context, children, stories),
+            const SizedBox(height: 32),
+            if (stories.isNotEmpty) ...[
+              _buildContinueAdventure(stories.first),
+              const SizedBox(height: 32),
+            ],
+            _buildCreateNewStory(),
+            const SizedBox(height: 32),
+            _buildRecentStories(stories),
+            const SizedBox(height: 120), // Spacer for bottom nav
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, List<ChildModel> children, List<StoryModel> stories) {
+    final displayName = children.isNotEmpty ? children.first.name : 'Parent';
+    final storyText = stories.isNotEmpty ? '${stories.first.durationMinutes} min • ${stories.first.theme}' : 'No stories yet';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -73,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, Emma!',
+                  'Hello, $displayName!',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFFFEFEFE),
                     fontSize: 20,
@@ -81,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 Text(
-                  '5 min • Adventure',
+                  storyText,
                   style: GoogleFonts.poppins(
                     color: const Color(0xB2FEFEFE),
                     fontSize: 14,
@@ -128,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildContinueAdventure() {
+  Widget _buildContinueAdventure(StoryModel story) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         SizedBox(
                           width: 170,
                           child: Text(
-                            'Emma & the Enchanted Forest',
+                            story.title,
                             style: GoogleFonts.poppins(
                               color: const Color(0xFFFEFEFE),
                               fontSize: 18,
@@ -184,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '5 min • Adventure',
+                          '${story.durationMinutes} min • ${story.theme}',
                           style: GoogleFonts.poppins(
                             color: const Color(0xB2FEFEFE),
                             fontSize: 14,
@@ -192,11 +232,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => PlayerDialog(story: story),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                           decoration: ShapeDecoration(
                             gradient: AppColors.buttonGradient,
                             shape: RoundedRectangleBorder(
@@ -223,6 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         ),
+                        ),
                       ],
                     ),
                   ),
@@ -248,7 +296,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildCreateNewStory() {
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        ref.read(navigationProvider.notifier).setTab(2);
+      },
       child: Container(
         width: double.infinity,
         height: 56,
@@ -285,7 +335,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRecentStories() {
+  Widget _buildRecentStories(List<StoryModel> stories) {
+    if (stories.isEmpty) return const SizedBox.shrink();
+
+    // Skip the first one if it's shown in "Continue Adventure"
+    final recent = stories.length > 1 ? stories.sublist(1) : <StoryModel>[];
+    if (recent.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,14 +354,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 16),
-        _buildStoryItem('Emma & the Pirate Treasure', '5 min • Adventure'),
-        const SizedBox(height: 12),
-        _buildStoryItem('Cats on a Space Adventure', '4 min • Space'),
+        ...recent.map((s) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildStoryItem(s),
+        )),
       ],
     );
   }
 
-  Widget _buildStoryItem(String title, String subtitle) {
+  Widget _buildStoryItem(StoryModel story) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -328,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      story.title,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 16,
@@ -336,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     Text(
-                      subtitle,
+                      '${story.durationMinutes} min • ${story.theme}',
                       style: GoogleFonts.poppins(
                         color: const Color(0xB2FEFEFE),
                         fontSize: 14,
@@ -346,34 +403,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: ShapeDecoration(
-                  gradient: AppColors.buttonGradient,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(23),
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => PlayerDialog(story: story),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 16,
+                  decoration: ShapeDecoration(
+                    gradient: AppColors.buttonGradient,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(23),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Play',
-                      style: GoogleFonts.poppins(
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.play_arrow_rounded,
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        size: 16,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        'Play',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -389,42 +454,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(99),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: -4,
           ),
         ],
       ),
-      child: AdaptiveBlurView(
-        blurStyle: BlurStyle.systemThinMaterial,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(99),
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.18),
-              width: 1,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+          child: Container(
+            height: 80,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              _buildNavItem(0, Icons.home_rounded, 'Home'),
-              _buildNavItem(1, Icons.all_inbox_rounded, 'Library'),
-              _buildNavItem(2, Icons.auto_awesome, 'Create'),
-              _buildNavItem(3, Icons.mic_none_rounded, 'Voice'),
-              _buildNavItem(4, Icons.person_rounded, 'Profile'),
-            ],
+            child: Row(
+              children: [
+                _buildNavItem(0, Icons.home_rounded, 'Home', ref),
+                _buildNavItem(1, Icons.all_inbox_rounded, 'Library', ref),
+                _buildNavItem(2, Icons.auto_awesome, 'Create', ref),
+                _buildNavItem(3, Icons.mic_none_rounded, 'Voice', ref),
+                _buildNavItem(4, Icons.person_rounded, 'Profile', ref),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index;
+  Widget _buildNavItem(int index, IconData icon, String label, WidgetRef ref) {
+    final currentIndex = ref.watch(navigationProvider);
+    final isSelected = currentIndex == index;
     const selectedColor = Color(0xFFE89C30);
     final unselectedColor = Colors.white.withValues(alpha: 0.5);
     const duration = Duration(milliseconds: 400);
@@ -432,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => ref.read(navigationProvider.notifier).setTab(index),
         behavior: HitTestBehavior.opaque,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(end: isSelected ? 1.0 : 0.0),

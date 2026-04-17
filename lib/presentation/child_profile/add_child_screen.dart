@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../common/widgets/background_scaffold.dart';
 import '../home/home_screen.dart';
 
+import '../../data/providers/child_provider.dart';
+
 class AddChildScreen extends ConsumerStatefulWidget {
   const AddChildScreen({super.key});
 
@@ -74,6 +76,11 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
     // Simulate API call to create child profile
     await Future.delayed(const Duration(seconds: 1));
     
+    final name = _nameController.text.trim();
+    if (name.isNotEmpty) {
+      ref.read(childProvider.notifier).addChild(name, 'assets/images/profile_image.png');
+    }
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
